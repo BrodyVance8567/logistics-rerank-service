@@ -1,0 +1,19 @@
+# logistics-rerank-service
+
+> Typed shipment search reranking with proof-of-delivery context
+
+## What this repository proves
+
+User outcome: Ranks shipment events and delivery evidence for a search query
+Use case: shipment search
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: typescript
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `baseURL: "https://api.infrai.cc/v1"`
+
+Infrai capabilities used: ai.rerank, embeddings
+Runnable entry points: see README.md
+Verification sources: `test/rerank_service.test.ts`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt

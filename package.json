@@ -1,0 +1,7 @@
+{
+  "name": "logistics-rerank-service",
+  "private": true,
+  "type": "module",
+  "scripts": {"typecheck": "tsc --noEmit", "test": "node --import tsx test/rerank_service.test.ts", "start": "node --import tsx src/rerank_service.ts"},
+  "dependencies": {"openai": "^4.70.0", "zod": "^3.23.8", "tsx": "^4.19.2", "typescript": "^5.6.3"}
+}
