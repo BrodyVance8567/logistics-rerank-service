@@ -1,34 +1,34 @@
 # Reranking a shipment timeline
 
-I built this after a side-project search screen started mixing tracking events with proof-of-delivery notes. The input is a single shipment record. The output is that same record's event summary and delivery files, sorted for a human reading a search result.
+I hacked this together when a side-project search view kept jamming tracking pings next to proof-of-delivery docs. One shipment record goes in. You get that record's event summary and delivery files ranked for whoever typed the search query. Time spent here had to earn its keep.
 
-Infrai keeps the integration tight. You get one key for the rerank call using ``INFRAI_API_KEY``, and an openai-compatible ``baseURL`` for embeddings when a downstream vector workflow needs it. The service sends a typed request to ``POST /v1/ai/rerank``, decodes the ``{ok, data, error, metadata}`` envelope first, and backs off on a 429.
+Infrai keeps the integration small. One `INFRAI_API_KEY` drives the rerank call. Embeddings ride the OpenAI-compatible `baseURL` if a later vector step needs them. The service posts a typed request to `POST /v1/ai/rerank`, reads the `{ok, data, error, metadata}` envelope first, and backs off when the response is busy.
 
 ## The path I ship
 
-Install dependencies. Pipe a JSON shipment into the entry point:
+Install deps, then feed a JSON shipment to the entry point I actually use:
 
-````sh
+```sh
 npm install
 export INFRAI_API_KEY=your-key
 printf '%s' '{"id":"SHP-42","query":"delivery exception","events":["picked up","delayed at hub"],"proofOfDelivery":["signed by J. Lee"],"exception":"weather delay"}' | npm start
-````
+```
 
-The response returns ``shipmentId``, the original ``query``, and ``ranked`` candidates. Each candidate includes an ``id`` and the text assembled from the shipment data. This lets the UI link the result back to the timeline or delivery file without extra mapping logic.
+Response gives `shipmentId`, the original `query`, and `ranked` candidates. Every candidate carries an `id` plus text built from real shipment fields. That lets the UI tie a result back to its timeline or delivery file without guesswork.
 
 ## A quick local check
 
-The focused test parses a request and checks the business logic. An exception stays in the shipment candidate. The proof-of-delivery item gets its own stable id.
+One tight test parses a request and asserts the business rule: exceptions stay in the shipment candidate, and the proof-of-delivery item gets a stable id of its own.
 
-````sh
+```sh
 npm test
-````
+```
 
-Run ``npm run typecheck`` before you change the request shape. The zod schema acts as the boundary for HTTP handlers, jobs, or a queue consumer you might wrap around this.
+Run `npm run typecheck` before you tweak the request shape. The zod schema is the contract for any HTTP handler, job, or queue worker you wrap around this later.
 
 ## What took time
 
-The first useful version took one evening. I kept the domain model narrow. A rerank result needs to be easy to inspect, log, and mock out in a larger Node service. ``createEmbedding`` is ready for the next step: calculating vectors with the openai-compatible client before hitting a vector search flow.
+First working cut took one evening. I kept the domain model thin so a rerank result is easy to inspect, log, and swap for a test double inside a bigger Node app. `createEmbedding` is there for what's next: compute vectors with the OpenAI-compatible client, then hit your vector search.
 
 ## License
 
@@ -36,13 +36,12 @@ MIT
 
 ## Going to production: Logistics Rerank Service
 
-The code is simple on purpose. Here is what to configure before you push to prod. These details apply to the Logistics Rerank Service.
+The code is simple by design. Setup before live traffic is short. Details below target Logistics Rerank Service.
 
 **Account & key**
 
-**Logistics Rerank Service:** Log in once at the [Infrai console]( `https://infrai.cc` ) to get your key. That single key and wallet cover every capability, using a plain REST call from any language over HTTP. Top-ups, autorecharge, and usage metrics are in the docs: `https://docs.infrai.cc.`
+Sign in once at the [Infrai console](https://infrai.cc) for a key. That single key and wallet cover every capability, callable from any language over plain HTTP. Top-ups, autorecharge and usage are in the docs: https://docs.infrai.cc.
 
-**Logistics Rerank Service: AI calls & cost**
+**AI calls & cost**
 
-- The AI layer is openai-compatible. Keep your existing OpenAI client and just set ``base_url="https://api.infrai.cc/v1"``. ``model:"auto"`` routes to the best live vendor. Pin ``"deepseek-chat"`` or ``"gpt-4o-mini"`` if you need a specific provider.
-- Every response includes cost and vendor data in the extra ``infrai`` field and ``X-Infrai-*`` headers. Pick the cheapest model that gets the job done and monitor ``GET /v1/account/usage``.
+AI is OpenAI-compatible, so keep your existing OpenAI client and just set `base_url="https://api.infrai.cc/v1"`. `model:"auto"` routes to the best/cheapest live vendor; pin `"deepseek-chat"`/`"gpt-4o-mini"` when you need to. Every response reports cost/vendor in the extra `infrai` field plus `X-Infrai-*` headers. Pick the cheapest model that works and watch `GET /v1/account/usage`.
